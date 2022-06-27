@@ -257,7 +257,8 @@ int sala_ejecutar_interaccion(sala_t *sala, const char *verbo, const char *objet
 		if(strcmp(interaccion->verbo, verbo) == 0 &&
 		strcmp(interaccion->objeto, objeto1) == 0 &&
 		strcmp(interaccion->objeto_parametro, objeto2) == 0){
-			ejecutadas = ejecutar_interacciones(sala, interaccion, objeto1, objeto2, mostrar_mensaje, aux);
+			
+			ejecutadas = ejecutar_accion(sala, interaccion, objeto1, objeto2, mostrar_mensaje, aux);
 		}			
 	}
 	return ejecutadas;
