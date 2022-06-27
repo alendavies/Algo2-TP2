@@ -10,6 +10,7 @@
 typedef struct sala {
 	lista_t *objetos;
 	lista_t *interacciones;
+	bool escape_exitoso;
 } sala_t;
 
 #define MAX_CARACTERES 1024
@@ -158,14 +159,116 @@ bool sala_es_interaccion_valida(sala_t *sala, const char *verbo, const char *obj
 
 		struct interaccion *interaccion = (struct interaccion *)lista_elemento_en_posicion(sala->interacciones, (size_t)i);
 
-		if(!strcmp(interaccion->verbo, verbo) &&
-		!strcmp(interaccion->objeto, objeto1) &&
-		!strcmp(interaccion->objeto_parametro, objeto2)){
+		if(strcmp(interaccion->verbo, verbo) == 0 &&
+		strcmp(interaccion->objeto, objeto1) == 0 &&
+		strcmp(interaccion->objeto_parametro, objeto2) == 0){
 		 	return true;
 		}
 			
 	}
 	return false;
+}
+
+bool sala_agarrar_objeto(sala_t *sala, const char *nombre_objeto)
+{
+	if(!sala || !nombre_objeto){
+		return false;
+	}
+	for(int i = 0; i < sala->objetos->cantidad; i++){
+		struct objeto *objeto = lista_elemento_en_posicion(sala->objetos, (size_t)i);
+		if(!objeto){
+			return false;
+		}
+		if(strcmp(objeto->nombre, nombre_objeto) == 0){
+			return objeto->es_asible;
+		}
+	}
+	return false;
+}
+
+char* sala_describir_objeto(sala_t* sala, const char *nombre_objeto)
+{
+	if(!sala || !nombre_objeto){
+		return NULL;
+	}
+	for(int i = 0; i < sala->objetos->cantidad; i++){
+		struct objeto *objeto = lista_elemento_en_posicion(sala->objetos, (size_t)i);
+		if(!objeto){
+			return NULL;
+		}
+		if(strcmp(objeto->nombre, nombre_objeto) == 0){
+			return objeto->descripcion;
+		}
+	}
+	return NULL;
+}
+
+int ejecutar_accion(sala_t *sala, struct interaccion *interaccion, const char *objeto1, const char *objeto2, void (*mostrar_mensaje)(const char *mensaje, enum tipo_accion accion, void *aux), void *aux){
+
+	int ejecutadas = 0;
+	
+	if(interaccion->accion.tipo == MOSTRAR_MENSAJE){
+		mostrar_mensaje(interaccion->accion.mensaje, interaccion->accion.tipo, NULL);
+		ejecutadas++;
+	}
+	if(interaccion->accion.tipo == ELIMINAR_OBJETO){
+		for(int i = 0; i < sala->objetos->cantidad; i++){
+			struct objeto *objeto = lista_elemento_en_posicion(sala->objetos, i);
+			if(strcmp(objeto->nombre, objeto1) == 0){
+				lista_quitar_de_posicion(sala->objetos, i);
+			}
+		}
+		ejecutadas++;
+	}
+	if(interaccion->accion.tipo == DESCUBRIR_OBJETO){
+		//Conocer objeto
+		ejecutadas++;
+	}
+	if(interaccion->accion.tipo == ESCAPAR){
+		sala->escape_exitoso = true;
+		ejecutadas++;
+	}
+	if(interaccion->accion.tipo == REEMPLAZAR_OBJETO){
+		for(int i = 0; i < sala->objetos->cantidad; i++){
+			struct objeto *objeto_parametro = lista_elemento_en_posicion(sala->objetos, i);
+			if(strcmp(objeto_parametro->nombre, objeto2) == 0){
+				lista_quitar_de_posicion(sala->objetos, i);
+			}
+		}
+		//descubrir nuevo objeto
+		ejecutadas++;
+	}
+	return ejecutadas;
+}
+
+int sala_ejecutar_interaccion(sala_t *sala, const char *verbo, const char *objeto1, const char *objeto2, void (*mostrar_mensaje)(const char *mensaje, enum tipo_accion accion, void *aux), void *aux)
+{
+	if(!sala || !verbo || !objeto1 || !objeto2 || !mostrar_mensaje || !aux){
+		return 0;
+	}
+	if(!sala_es_interaccion_valida(sala, verbo, objeto1, objeto2)){
+		return 0;
+	}
+	int ejecutadas = 0;
+	for(int i = 0; i < sala->interacciones->cantidad; i++){
+
+		struct interaccion *interaccion = (struct interaccion *)lista_elemento_en_posicion(sala->interacciones, (size_t)i);
+
+		if(strcmp(interaccion->verbo, verbo) == 0 &&
+		strcmp(interaccion->objeto, objeto1) == 0 &&
+		strcmp(interaccion->objeto_parametro, objeto2) == 0){
+			ejecutadas = ejecutar_interacciones(sala, interaccion, objeto1, objeto2, mostrar_mensaje, aux);
+		}			
+	}
+	return ejecutadas;
+}
+
+bool sala_escape_exitoso(sala_t *sala)
+{
+	if(!sala){
+		return false;
+	}
+	return sala->escape_exitoso;
 }
 
 void sala_destruir(sala_t *sala)
