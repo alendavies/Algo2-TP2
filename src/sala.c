@@ -7,11 +7,11 @@
 #include <string.h>
 #include "lista.h"
 
-typedef struct sala {
+struct sala {
 	lista_t *objetos;
 	lista_t *interacciones;
 	bool escape_exitoso;
-} sala_t;
+};
 
 #define MAX_CARACTERES 1024
 #define CANT_OBJETOS 20
@@ -111,6 +111,7 @@ sala_t *sala_crear_desde_archivos(const char *objetos, const char *interacciones
 	fclose(arch_interacciones);
 	
 	if(sala->interacciones->cantidad == 0 || sala->objetos->cantidad == 0){
+		sala_destruir(sala);
 		return NULL;
 	}
 	
@@ -213,9 +214,9 @@ int ejecutar_accion(sala_t *sala, struct interaccion *interaccion, const char *o
 	}
 	if(interaccion->accion.tipo == ELIMINAR_OBJETO){
 		for(int i = 0; i < sala->objetos->cantidad; i++){
-			struct objeto *objeto = lista_elemento_en_posicion(sala->objetos, i);
+			struct objeto *objeto = lista_elemento_en_posicion(sala->objetos, (size_t)i);
 			if(strcmp(objeto->nombre, objeto1) == 0){
-				lista_quitar_de_posicion(sala->objetos, i);
+				lista_quitar_de_posicion(sala->objetos, (size_t)i);
 			}
 		}
 		ejecutadas++;
@@ -230,9 +231,9 @@ int ejecutar_accion(sala_t *sala, struct interaccion *interaccion, const char *o
 	}
 	if(interaccion->accion.tipo == REEMPLAZAR_OBJETO){
 		for(int i = 0; i < sala->objetos->cantidad; i++){
-			struct objeto *objeto_parametro = lista_elemento_en_posicion(sala->objetos, i);
+			struct objeto *objeto_parametro = lista_elemento_en_posicion(sala->objetos, (size_t)i);
 			if(strcmp(objeto_parametro->nombre, objeto2) == 0){
-				lista_quitar_de_posicion(sala->objetos, i);
+				lista_quitar_de_posicion(sala->objetos, (size_t)i);
 			}
 		}
 		//descubrir nuevo objeto
@@ -277,7 +278,7 @@ void sala_destruir(sala_t *sala)
 	if(!sala){
 		return;
 	}
-	lista_destruir(sala->objetos);
-	lista_destruir(sala->interacciones);
+	lista_destruir_todo(sala->objetos, free);
+	lista_destruir_todo(sala->interacciones, free);
 	free(sala);
 }
