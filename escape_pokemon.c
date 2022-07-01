@@ -44,7 +44,7 @@ void imprimir_interacciones_sala(sala_t *sala){
 
 void mostrar_mensaje(const char *mensaje, enum tipo_accion accion, void *aux)
 {
-	printf("\n%s\n\n", mensaje);
+	printf("\n%s\n", mensaje);
 }
 
 void imprimir_objetos_conocidos(sala_t *sala)
@@ -109,10 +109,10 @@ int validar_opcion(sala_t *sala, char *comando, char *objeto1, char *objeto2, bo
 		}				
 	}
 
-	else if(!strcmp(comando, "describir")){
+	else if(!strcmp(comando, "describir") && strcmp(objeto1, "") != 0){
 		char *descripcion = sala_describir_objeto(sala, objeto1);
 		if(descripcion){
-			printf("%s\n", descripcion);
+			printf("\n%s\n", descripcion);
 		}	
 	}
 
@@ -134,7 +134,7 @@ int validar_opcion(sala_t *sala, char *comando, char *objeto1, char *objeto2, bo
 	}
 
 	if(sala_escape_exitoso(sala)){
-		printf("GANASTE\n");
+		printf("\nGANASTE\n");
 		*ganado = true;
 		return -1;
 	}

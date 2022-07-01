@@ -301,8 +301,11 @@ char* sala_describir_objeto(sala_t* sala, const char *nombre_objeto)
 
 	struct objeto *objeto_conocido = lista_buscar_elemento(sala->conocidos, comparador, (void *)nombre_objeto);
 	
-	if(objeto_poseido || objeto_conocido){
+	if(objeto_poseido){
 		return objeto_poseido->descripcion;
+	}
+	else if(objeto_conocido){
+		return objeto_conocido->descripcion;
 	}
 
 	return NULL;
