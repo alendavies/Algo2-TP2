@@ -301,7 +301,7 @@ bool sala_es_interaccion_valida(sala_t *sala, const char *verbo, const char *obj
 	return false;
 }
 
-lista_t *lista_quitar_elemento(lista_t *lista, int (*comparador)(void *, void *), void *contexto)
+lista_t *lista_quitar_elemento(lista_t *lista, int (*comparador)(void *, void *), void *contexto, bool eliminar)
 {
 	if (!lista || !comparador || lista_vacia(lista)){
 		return NULL;
@@ -318,6 +318,9 @@ lista_t *lista_quitar_elemento(lista_t *lista, int (*comparador)(void *, void *)
 			objeto = lista_quitar_de_posicion(lista, i);
 			if(!objeto){
 				return NULL;
+			}
+			if(eliminar){
+				free(objeto);
 			}
 		}
 	}
@@ -381,9 +384,9 @@ bool eliminar_objeto(sala_t *sala, const char *nombre_objeto)
 		return false;
 	}
 
-	lista_t *poseidos = lista_quitar_elemento(sala->poseidos, comparador, (void *)nombre_objeto);
-	lista_t *conocidos = lista_quitar_elemento(sala->conocidos, comparador, (void *)nombre_objeto);
-	lista_t *objetos = lista_quitar_elemento(sala->objetos, comparador, (void *)nombre_objeto);
+	lista_t *poseidos = lista_quitar_elemento(sala->poseidos, comparador, (void *)nombre_objeto, false);
+	lista_t *conocidos = lista_quitar_elemento(sala->conocidos, comparador, (void *)nombre_objeto, false);
+	lista_t *objetos = lista_quitar_elemento(sala->objetos, comparador, (void *)nombre_objeto, true);
 
 	if(!poseidos && !conocidos && !objetos){
 		return false;
