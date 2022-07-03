@@ -105,40 +105,6 @@ bool conocer_objeto(sala_t *sala, const char *nombre_objeto)
 	return true;
 }
 
-/* Inicializa y la sala con todos sus campos y la devuelve.
-   En caso de error devuelve NULL.*/
-sala_t *sala_crear(lista_t *objetos, lista_t *interaccion)
-{
-	sala_t *sala = calloc(1, sizeof(struct sala));
-	if(!sala){
-		return NULL;
-	}
-
-	lista_t *lista_conocidos = lista_crear();
-	if(!lista_conocidos){
-		sala_destruir(sala);
-		return NULL;
-	}
-
-	lista_t *lista_poseidos = lista_crear();
-	if(!lista_poseidos){
-		sala_destruir(sala);
-		return NULL;
-	}
-
-	sala->objetos = objetos;
-	sala->interacciones = interaccion;
-	sala->conocidos = lista_conocidos;
-	sala->poseidos = lista_poseidos;
-	sala->escape_exitoso = false;
-
-	if(!conocer_objeto(sala, "habitacion")){
-		return NULL;
-	}
-
-	return sala;
-}
-
 sala_t *sala_crear_desde_archivos(const char *objetos, const char *interacciones)
 {	
 	if(!objetos || !interacciones){
@@ -155,32 +121,55 @@ sala_t *sala_crear_desde_archivos(const char *objetos, const char *interacciones
 		fclose(arch_objetos);
         	return NULL;
 	}
-	
-	lista_t *lista_objetos = crear_lista_objetos(arch_objetos);
-	if(!lista_objetos){
-		fclose(arch_objetos);
-		fclose(arch_interacciones);
-		return NULL;
-	}
 
-	lista_t *lista_interaccion = crear_lista_interacciones(arch_interacciones);
-	if(!lista_interaccion){
-		fclose(arch_interacciones);
-		return NULL;
-	}
-
-	sala_t *sala = sala_crear(lista_objetos, lista_interaccion);
+	sala_t *sala = calloc(1, sizeof(struct sala));
 	if(!sala){
 		fclose(arch_objetos);
 		fclose(arch_interacciones);
 		return NULL;
 	}
 
+	lista_t *lista_objetos = crear_lista_objetos(arch_objetos);
+	if(!lista_objetos){
+		fclose(arch_objetos);
+		fclose(arch_interacciones);
+		sala_destruir(sala);
+		return NULL;
+	}
 	fclose(arch_objetos);
+
+	lista_t *lista_interaccion = crear_lista_interacciones(arch_interacciones);
+	if(!lista_interaccion){
+		fclose(arch_interacciones);
+		sala_destruir(sala);
+		return NULL;
+	}
 	fclose(arch_interacciones);
-	
+
+	lista_t *lista_conocidos = lista_crear();
+	if(!lista_conocidos){
+		sala_destruir(sala);
+		return NULL;
+	}
+
+	lista_t *lista_poseidos = lista_crear();
+	if(!lista_poseidos){
+		sala_destruir(sala);
+		return NULL;
+	}
+
+	sala->objetos = lista_objetos;
+	sala->interacciones = lista_interaccion;
+	sala->conocidos = lista_conocidos;
+	sala->poseidos = lista_poseidos;
+	sala->escape_exitoso = false;
+
 	if(sala->interacciones->cantidad == 0 || sala->objetos->cantidad == 0){
 		sala_destruir(sala);
+		return NULL;
+	}
+
+	if(!conocer_objeto(sala, "habitacion")){
 		return NULL;
 	}
 	
@@ -396,13 +385,19 @@ bool eliminar_objeto(sala_t *sala, const char *nombre_objeto)
 	lista_t *conocidos = lista_quitar_elemento(sala->conocidos, comparador, (void *)nombre_objeto);
 	lista_t *objetos = lista_quitar_elemento(sala->objetos, comparador, (void *)nombre_objeto);
 
-	if(!poseidos || !conocidos || !objetos){
+	if(!poseidos && !conocidos && !objetos){
 		return false;
 	}
 
-	sala->poseidos = poseidos;
-	sala->conocidos = conocidos;
-	sala->objetos = objetos;
+	if(poseidos){
+		sala->poseidos = poseidos;
+	}
+	if(conocidos){
+		sala->conocidos = conocidos;
+	}
+	if(objetos){
+		sala->objetos = objetos;
+	}
 
 	return true;
 }
@@ -415,28 +410,32 @@ int ejecutar_accion(sala_t *sala, struct interaccion *interaccion, const char *o
 		return ejecutadas;
 	}
 	else if(interaccion->accion.tipo == MOSTRAR_MENSAJE){
+		mostrar_mensaje(interaccion->accion.mensaje, interaccion->accion.tipo, aux);
 		ejecutadas++;
 	}
 	else if(interaccion->accion.tipo == ELIMINAR_OBJETO){
 		if(eliminar_objeto(sala, objeto1)){
+			mostrar_mensaje(interaccion->accion.mensaje, interaccion->accion.tipo, aux);
 			ejecutadas++;
 		}
 	}
 	else if(interaccion->accion.tipo == DESCUBRIR_OBJETO){
 		if(conocer_objeto(sala, interaccion->accion.objeto)){
+			mostrar_mensaje(interaccion->accion.mensaje, interaccion->accion.tipo, aux);
 			ejecutadas++;
 		}
 	}
 	else if(interaccion->accion.tipo == ESCAPAR){
 		sala->escape_exitoso = true;
+		mostrar_mensaje(interaccion->accion.mensaje, interaccion->accion.tipo, aux);
 		ejecutadas++;
 	}
 	else if(interaccion->accion.tipo == REEMPLAZAR_OBJETO){
 		if(eliminar_objeto(sala, objeto2) && conocer_objeto(sala, interaccion->accion.objeto)){
+			mostrar_mensaje(interaccion->accion.mensaje, interaccion->accion.tipo, aux);
 			ejecutadas++;
 		}
 	}
-	mostrar_mensaje(interaccion->accion.mensaje, interaccion->accion.tipo, aux);
 
 	return ejecutadas;
 }

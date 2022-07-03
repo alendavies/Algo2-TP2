@@ -7,42 +7,6 @@
 #define ERROR -1
 #define MAX_STRING 100                                               
 
-void imprimir_objetos_sala(sala_t *sala){
-
-	int cantidad_objetos = 0;
-
-	char **nombre_objetos = sala_obtener_nombre_objetos(sala, &cantidad_objetos);
-
-	if(nombre_objetos == NULL || cantidad_objetos == ERROR){
-		printf("Hubo un error al imprimir los objetos de la sala\n");
-	}
-
-	printf("\nObjetos...\n");
-
-	for(int i = 0; i < cantidad_objetos; i++){
-		printf("%i: %s\n", i, nombre_objetos[i]);
-	}
-	
-	free(nombre_objetos);
-}
-
-void imprimir_interacciones_sala(sala_t *sala){
-
-	printf("\nInteracciones...\n");
-
-	printf("Examinar habitación: ");
-	sala_es_interaccion_valida(sala, "examinar", "habitacion", "") ? printf("Válido\n") : printf("Inválido\n");
-
-	printf("Abrir pokebola: ");
-	sala_es_interaccion_valida(sala, "abrir", "pokebola", "") ? printf("Válido\n") : printf("Inválido\n");
-
-	printf("Usar llave en el cajon: ");
-	sala_es_interaccion_valida(sala, "usar", "llave", "cajon") ? printf("Válido\n") : printf("Inválido\n");
-
-	printf("Quemar la mesa: ");
-	sala_es_interaccion_valida(sala, "quemar", "mesa", "") ? printf("Válido\n") : printf("Inválido\n");
-}
-
 void mostrar_mensaje(const char *mensaje, enum tipo_accion accion, void *aux)
 {
 	printf("\n%s\n\n", mensaje);
@@ -118,6 +82,7 @@ int validar_opcion(sala_t *sala, char *comando, char *objeto1, char *objeto2, bo
 	}
 
 	else if(!strcmp(comando, "agarrar")){
+
 		if(sala_agarrar_objeto(sala, objeto1)){
 			printf("\nNuevo objeto en el inventario: %s\n\n", objeto1);
 		}
@@ -130,7 +95,10 @@ int validar_opcion(sala_t *sala, char *comando, char *objeto1, char *objeto2, bo
 		char *descripcion = sala_describir_objeto(sala, objeto1);
 		if(descripcion){
 			printf("\n%s\n", descripcion);
-		}	
+		}
+		else{
+			printf("\nNo se puede obtener la descripcion de ese objeto\n");
+		}
 	}
 
 	else if(!strcmp(comando, "salir") && !strcmp(objeto1, "")){
@@ -151,10 +119,7 @@ int validar_opcion(sala_t *sala, char *comando, char *objeto1, char *objeto2, bo
 	}
 
 	if(sala_escape_exitoso(sala)){
-                system("clear");
-                
-                                           
-                                          
+                system("clear");                     
 		*ganado = true;
 		return -1;
 	}
