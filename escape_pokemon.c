@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define ERROR -1
-#define MAX_STRING 100
+#define MAX_STRING 100                                               
 
 void imprimir_objetos_sala(sala_t *sala){
 
@@ -44,7 +45,7 @@ void imprimir_interacciones_sala(sala_t *sala){
 
 void mostrar_mensaje(const char *mensaje, enum tipo_accion accion, void *aux)
 {
-	printf("\n%s\n", mensaje);
+	printf("\n%s\n\n", mensaje);
 }
 
 void imprimir_objetos_conocidos(sala_t *sala)
@@ -55,7 +56,7 @@ void imprimir_objetos_conocidos(sala_t *sala)
 	if(!conocidos || cantidad_conocidos == ERROR){
 		printf("\nHubo un error al imprimir los objetos conocidos\n");
 	}
-	printf("\nObjetos conocidos:\n");
+	printf("\nObjetos conocidos:\n\n");
 	
 	for (int i = 0; i < cantidad_conocidos; i++) {
 		printf("%i: %s\n\n", i, conocidos[i]);
@@ -72,7 +73,7 @@ void imprimir_inventario(sala_t *sala)
 		printf("\nHubo un error al imprimir los objetos del inventario\n");
 	}
 	
-	printf("\nInventario:\n");
+	printf("\nInventario:\n\n");
 	
 	for (int i = 0; i < cantidad_poseidos; i++) {
 		printf("%i: %s\n\n", i, poseidos[i]);
@@ -82,14 +83,30 @@ void imprimir_inventario(sala_t *sala)
 
 void imprimir_introduccion()
 {
+        printf("\nAbrís los ojos.\n");
+        sleep(2);
+        printf("\nEstá todo oscuro.\n");
+        sleep(2);
+        printf("\nNo sabés dónde estás.\n");
+        sleep(2);
+        printf("\nEstás confundido y mareado.\n");
+        sleep(2);
+        printf("\nSeguro te la re pusiste en la pera anoche y estás tirado en algún callejón.\n");
+        sleep(3);
+        printf("\n\nAl prestar más atención, te das cuenta que estás en una especie de habitación.\n");
+        sleep(3);
+        printf("\nTe incorporas y miras a tu alrededor, en la oscuridad. Llegas a discernir lo que parece una pared.\n");
+        sleep(3);
+        printf("\nQuizás sea buena idea >examinar< con más detalle la habitación.\n\n\n");
 
+        printf("(I) Inventario\t\t (C) Objetos descubiertos \t\t (A) Ayuda\n\n");
+
+        printf("=================================================================================================================================================================\n\n");
 }
 
 int validar_opcion(sala_t *sala, char *comando, char *objeto1, char *objeto2, bool *ganado)
 {
-	if(!strcmp(comando, "ayuda")){
-
-		system("clear");
+	if(!strcmp(comando, "A") || !strcmp(comando, "a")){
 
 		printf("\nEstos son los comandos disponibles:\n\n");
 		printf("\t-Para ver los objetos en el inventario ingresá (I).\n");
@@ -134,7 +151,10 @@ int validar_opcion(sala_t *sala, char *comando, char *objeto1, char *objeto2, bo
 	}
 
 	if(sala_escape_exitoso(sala)){
-		printf("\nGANASTE\n");
+                system("clear");
+                
+                                           
+                                          
 		*ganado = true;
 		return -1;
 	}
@@ -142,11 +162,9 @@ int validar_opcion(sala_t *sala, char *comando, char *objeto1, char *objeto2, bo
 	return 0;
 }
 
-void iniciar_juego(sala_t *sala)
+int iniciar_juego(sala_t *sala)
 {
 	bool ganado = false;
-
-	imprimir_introduccion();
 
 	while(ganado == false){
 
@@ -158,16 +176,19 @@ void iniciar_juego(sala_t *sala)
 		char objeto2[MAX_STRING];
 		strcpy(objeto2, "");
 
-		fgets(input, MAX_STRING, stdin);
+                printf("> ");
+
+                scanf(" %[^\n]", input);
 
 		sscanf(input, "%s %s %s", comando, objeto1, objeto2);
 
 		int opcion = validar_opcion(sala, comando, objeto1, objeto2, &ganado);
 
 		if(opcion == -1){
-			return;
+			return -1;
 		}
 	}
+        return 0;
 }
 
 void mostrar_instrucciones()
@@ -186,7 +207,11 @@ void menu_principal(sala_t *sala)
 
 	if(opcion == 'J' || opcion == 'j'){
 		system("clear");
-		iniciar_juego(sala);
+                //imprimir_introduccion();
+		int salir = iniciar_juego(sala);
+                if(salir == -1){
+                        return;
+                }
 		menu_principal(sala);
 	}
 	else if(opcion == 'I' || opcion == 'i'){

@@ -28,6 +28,7 @@ int comparador(void *elemento, void *contexto)
 lista_t *crear_lista_objetos(FILE *archivo)
 {
 	char linea[MAX_CARACTERES];
+
 	lista_t *lista_objetos = lista_crear();
 	if(!lista_objetos){
 		return NULL;
@@ -81,18 +82,57 @@ bool conocer_objeto(sala_t *sala, const char *nombre_objeto)
 		return false;
 	}
 
-	if(lista_buscar_elemento(sala->conocidos, comparador, (void *)nombre_objeto) != NULL){
+	struct objeto *objeto_en_conocidos = lista_buscar_elemento(sala->conocidos, comparador, (void *)nombre_objeto);
+
+	struct objeto *objeto_en_poseidos = lista_buscar_elemento(sala->poseidos, comparador, (void *)nombre_objeto);
+
+	if(objeto_en_conocidos || objeto_en_poseidos){
 		return false;
 	}
 
 	struct objeto *objeto = lista_buscar_elemento(sala->objetos, comparador, (void *)nombre_objeto);
 
-	if(objeto){
-		lista_insertar(sala->conocidos, objeto);
-		return true;
+	if(!objeto){
+		return false;
 	}
 
-	return false;
+	lista_t *conocidos = lista_insertar(sala->conocidos, objeto);
+	if(!conocidos){
+		return false;
+	}
+	sala->conocidos = conocidos;
+
+	return true;
+}
+
+sala_t *sala_crear()
+{
+	sala_t *sala = calloc(1, sizeof(struct sala));
+	if(!sala){
+		return NULL;
+	}
+
+	lista_t *lista_conocidos = lista_crear();
+	if(!lista_conocidos){
+		sala_destruir(sala);
+		return NULL;
+	}
+
+	lista_t *lista_poseidos = lista_crear();
+	if(!lista_poseidos){
+		sala_destruir(sala);
+		return NULL;
+	}
+
+	sala->conocidos = lista_conocidos;
+	sala->poseidos = lista_poseidos;
+	sala->escape_exitoso = false;
+
+	if(!conocer_objeto(sala, "habitacion")){
+		return NULL;
+	}
+
+	return sala;
 }
 
 sala_t *sala_crear_desde_archivos(const char *objetos, const char *interacciones)
@@ -112,12 +152,13 @@ sala_t *sala_crear_desde_archivos(const char *objetos, const char *interacciones
         	return NULL;
 	}
 
-	sala_t *sala = calloc(1, sizeof(struct sala));
+	sala_t *sala = sala_crear();
+
 	if(!sala){
 		fclose(arch_objetos);
 		fclose(arch_interacciones);
 		return NULL;
-	}	
+	}
 	
 	lista_t *lista_objetos = crear_lista_objetos(arch_objetos);
 	if(!lista_objetos){
@@ -142,23 +183,6 @@ sala_t *sala_crear_desde_archivos(const char *objetos, const char *interacciones
 		sala_destruir(sala);
 		return NULL;
 	}
-
-	lista_t *lista_conocidos = lista_crear();
-	if(!lista_conocidos){
-		sala_destruir(sala);
-		return NULL;
-	}
-
-	lista_t *lista_poseidos = lista_crear();
-	if(!lista_poseidos){
-		sala_destruir(sala);
-		return NULL;
-	}
-
-	sala->conocidos = lista_conocidos;
-	sala->poseidos = lista_poseidos;
-
-	conocer_objeto(sala, "habitacion");
 	
 	return sala;
 }
@@ -246,7 +270,10 @@ char **sala_obtener_nombre_objetos_poseidos(sala_t *sala, int *cantidad)
 	}
 
 	for(int i = 0; i < *cantidad; i++){
-		struct objeto *objeto = (struct objeto*)lista_elemento_en_posicion(sala->poseidos, (size_t)i);
+		struct objeto *objeto = lista_elemento_en_posicion(sala->poseidos, (size_t)i);
+		if(!objeto){
+			return NULL;
+		}
 		poseidos[i] = objeto->nombre;
 	}
 
@@ -261,16 +288,41 @@ bool sala_es_interaccion_valida(sala_t *sala, const char *verbo, const char *obj
 
 	for(int i = 0; i < sala->interacciones->cantidad; i++){
 
-		struct interaccion *interaccion = (struct interaccion *)lista_elemento_en_posicion(sala->interacciones, (size_t)i);
+		struct interaccion *interaccion = lista_elemento_en_posicion(sala->interacciones, (size_t)i);
+		if(!interaccion){
+			return false;
+		}
 
-		if(strcmp(interaccion->verbo, verbo) == 0 &&
-		strcmp(interaccion->objeto, objeto1) == 0 &&
-		strcmp(interaccion->objeto_parametro, objeto2) == 0){
+		if(interaccion_correcta(interaccion, verbo, objeto1, objeto2)){
 		 	return true;
 		}	
 	}
 
 	return false;
+}
+
+lista_t *lista_quitar_elemento(lista_t *lista, int (*comparador)(void *, void *), void *contexto)
+{
+	if (!lista || !comparador || lista_vacia(lista)){
+		return NULL;
+	}
+
+	for (size_t i = 0; i < lista_tamanio(lista); i++) {
+
+		struct objeto *objeto = lista_elemento_en_posicion(lista, i);
+		if(!objeto){
+			return NULL;
+		}
+
+		if(comparador(objeto, contexto) == 0){
+			objeto = lista_quitar_de_posicion(lista, i);
+			if(!objeto){
+				return NULL;
+			}
+		}
+	}
+
+	return lista;
 }
 
 bool sala_agarrar_objeto(sala_t *sala, const char *nombre_objeto)
@@ -279,12 +331,24 @@ bool sala_agarrar_objeto(sala_t *sala, const char *nombre_objeto)
 		return false;
 	}
 
-	struct objeto *objeto_a_agarrar = lista_buscar_elemento(sala->poseidos, comparador, (void *)nombre_objeto);
+	struct objeto *objeto_en_conocidos = lista_buscar_elemento(sala->conocidos, comparador, (void *)nombre_objeto);
 
-	struct objeto *objeto_conocido = lista_buscar_elemento(sala->conocidos, comparador, (void *)nombre_objeto);
+	struct objeto *objeto_en_poseidos = lista_buscar_elemento(sala->poseidos, comparador, (void *)nombre_objeto);
 	
-	if(!objeto_a_agarrar && objeto_conocido != NULL && objeto_conocido->es_asible){
-		lista_insertar(sala->poseidos, objeto_conocido);
+	if(!objeto_en_poseidos && objeto_en_conocidos && objeto_en_conocidos->es_asible){
+
+		lista_t *poseidos = lista_insertar(sala->poseidos, objeto_en_conocidos);
+		if(!poseidos){
+			return false;
+		}
+		sala->poseidos = poseidos;
+
+		lista_t *conocidos = lista_quitar_elemento(sala->conocidos, comparador, (void *)objeto_en_conocidos->nombre);
+		if(!conocidos){
+			return false;
+		}
+		sala->conocidos = conocidos;
+
 		return true;
 	}
 
@@ -297,40 +361,18 @@ char* sala_describir_objeto(sala_t* sala, const char *nombre_objeto)
 		return NULL;
 	}
 
-	struct objeto *objeto_poseido = lista_buscar_elemento(sala->poseidos, comparador, (void *)nombre_objeto);
+	struct objeto *objeto_en_poseidos = lista_buscar_elemento(sala->poseidos, comparador, (void *)nombre_objeto);
 
-	struct objeto *objeto_conocido = lista_buscar_elemento(sala->conocidos, comparador, (void *)nombre_objeto);
+	struct objeto *objeto_en_conocidos = lista_buscar_elemento(sala->conocidos, comparador, (void *)nombre_objeto);
 	
-	if(objeto_poseido){
-		return objeto_poseido->descripcion;
+	if(objeto_en_poseidos){
+		return objeto_en_poseidos->descripcion;
 	}
-	else if(objeto_conocido){
-		return objeto_conocido->descripcion;
+	else if(objeto_en_conocidos){
+		return objeto_en_conocidos->descripcion;
 	}
 
 	return NULL;
-}
-
-lista_t *lista_quitar_elemento(lista_t *lista, int (*comparador)(void *, void *), void *contexto)
-{
-	if (!lista || !comparador || lista_vacia(lista)){
-		return NULL;
-	}
-
-	for (size_t i = 0; i < lista_tamanio(lista); i++) {
-		struct objeto *objeto = lista_elemento_en_posicion(lista, i);
-		if(!objeto){
-			return NULL;
-		}
-		if(comparador(objeto, contexto) == 0){
-			objeto = lista_quitar_de_posicion(lista, i);
-			if(!objeto){
-				return NULL;
-			}
-		}
-	}
-
-	return lista;
 }
 
 bool eliminar_objeto(sala_t *sala, const char *nombre_objeto)
@@ -372,34 +414,28 @@ int ejecutar_accion(sala_t *sala, struct interaccion *interaccion, const char *o
 	if(interaccion->accion.tipo == ACCION_INVALIDA){
 		return ejecutadas;
 	}
-	
 	else if(interaccion->accion.tipo == MOSTRAR_MENSAJE){
 		ejecutadas++;
 	}
-
 	else if(interaccion->accion.tipo == ELIMINAR_OBJETO){
 		if(eliminar_objeto(sala, objeto1)){
 			ejecutadas++;
 		}
 	}
-
 	else if(interaccion->accion.tipo == DESCUBRIR_OBJETO){
 		if(conocer_objeto(sala, interaccion->accion.objeto)){
 			ejecutadas++;
 		}
 	}
-
 	else if(interaccion->accion.tipo == ESCAPAR){
 		sala->escape_exitoso = true;
 		ejecutadas++;
 	}
-	
 	else if(interaccion->accion.tipo == REEMPLAZAR_OBJETO){
 		if(eliminar_objeto(sala, objeto2) && conocer_objeto(sala, interaccion->accion.objeto)){
 			ejecutadas++;
 		}
 	}
-
 	mostrar_mensaje(interaccion->accion.mensaje, interaccion->accion.tipo, aux);
 
 	return ejecutadas;
@@ -412,12 +448,10 @@ int sala_ejecutar_interaccion(sala_t *sala, const char *verbo, const char *objet
 	}
 
 	if(!lista_buscar_elemento(sala->conocidos, comparador, (void *)objeto1) && !lista_buscar_elemento(sala->poseidos, comparador, (void *)objeto1)){
-
 		return 0;
 	}
 
 	if(!sala_es_interaccion_valida(sala, verbo, objeto1, objeto2)){
-
 		return 0;
 	}
 	
@@ -426,6 +460,9 @@ int sala_ejecutar_interaccion(sala_t *sala, const char *verbo, const char *objet
 	for(int i = 0; i < sala->interacciones->cantidad; i++){
 
 		struct interaccion *interaccion = lista_elemento_en_posicion(sala->interacciones, (size_t)i);
+		if(!interaccion){
+			return NULL;
+		}
 
 		if(interaccion_correcta(interaccion, verbo, objeto1, objeto2)){
 			
