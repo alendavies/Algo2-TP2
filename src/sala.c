@@ -105,7 +105,9 @@ bool conocer_objeto(sala_t *sala, const char *nombre_objeto)
 	return true;
 }
 
-sala_t *sala_crear()
+/* Inicializa y la sala con todos sus campos y la devuelve.
+   En caso de error devuelve NULL.*/
+sala_t *sala_crear(lista_t *objetos, lista_t *interaccion)
 {
 	sala_t *sala = calloc(1, sizeof(struct sala));
 	if(!sala){
@@ -124,6 +126,8 @@ sala_t *sala_crear()
 		return NULL;
 	}
 
+	sala->objetos = objetos;
+	sala->interacciones = interaccion;
 	sala->conocidos = lista_conocidos;
 	sala->poseidos = lista_poseidos;
 	sala->escape_exitoso = false;
@@ -151,32 +155,28 @@ sala_t *sala_crear_desde_archivos(const char *objetos, const char *interacciones
 		fclose(arch_objetos);
         	return NULL;
 	}
-
-	sala_t *sala = sala_crear();
-
-	if(!sala){
-		fclose(arch_objetos);
-		fclose(arch_interacciones);
-		return NULL;
-	}
 	
 	lista_t *lista_objetos = crear_lista_objetos(arch_objetos);
 	if(!lista_objetos){
 		fclose(arch_objetos);
 		fclose(arch_interacciones);
-		sala_destruir(sala);
 		return NULL;
 	}
-	sala->objetos = lista_objetos;
-	fclose(arch_objetos);
 
 	lista_t *lista_interaccion = crear_lista_interacciones(arch_interacciones);
 	if(!lista_interaccion){
 		fclose(arch_interacciones);
-		sala_destruir(sala);
 		return NULL;
 	}
-	sala->interacciones = lista_interaccion;
+
+	sala_t *sala = sala_crear(lista_objetos, lista_interaccion);
+	if(!sala){
+		fclose(arch_objetos);
+		fclose(arch_interacciones);
+		return NULL;
+	}
+
+	fclose(arch_objetos);
 	fclose(arch_interacciones);
 	
 	if(sala->interacciones->cantidad == 0 || sala->objetos->cantidad == 0){
@@ -278,6 +278,17 @@ char **sala_obtener_nombre_objetos_poseidos(sala_t *sala, int *cantidad)
 	}
 
 	return poseidos;
+}
+
+bool interaccion_correcta(struct interaccion *interaccion, const char *verbo, const char *objeto1, const char *objeto2)
+{
+	if (strcmp(interaccion->verbo, verbo) == 0 && 
+	strcmp(interaccion->objeto, objeto1) == 0 && 
+	strcmp(interaccion->objeto_parametro, objeto2) == 0){
+		return true;
+	}
+
+	return false;
 }
 
 bool sala_es_interaccion_valida(sala_t *sala, const char *verbo, const char *objeto1, const char *objeto2)
@@ -396,17 +407,6 @@ bool eliminar_objeto(sala_t *sala, const char *nombre_objeto)
 	return true;
 }
 
-bool interaccion_correcta(struct interaccion *interaccion, const char *verbo, const char *objeto1, const char *objeto2)
-{
-	if (strcmp(interaccion->verbo, verbo) == 0 && 
-	strcmp(interaccion->objeto, objeto1) == 0 && 
-	strcmp(interaccion->objeto_parametro, objeto2) == 0){
-		return true;
-	}
-
-	return false;
-}
-
 int ejecutar_accion(sala_t *sala, struct interaccion *interaccion, const char *objeto1, const char *objeto2, void (*mostrar_mensaje)(const char *mensaje, enum tipo_accion accion, void *aux), void *aux){
 
 	int ejecutadas = 0;
@@ -461,7 +461,7 @@ int sala_ejecutar_interaccion(sala_t *sala, const char *verbo, const char *objet
 
 		struct interaccion *interaccion = lista_elemento_en_posicion(sala->interacciones, (size_t)i);
 		if(!interaccion){
-			return NULL;
+			return 0;
 		}
 
 		if(interaccion_correcta(interaccion, verbo, objeto1, objeto2)){
