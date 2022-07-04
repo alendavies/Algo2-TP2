@@ -202,7 +202,7 @@ sala_t *sala_crear_desde_archivos(const char *objetos, const char *interacciones
 		return NULL;
 	}
 
-	if (!conocer_objeto(sala, "habitacion")){
+	if (!conocer_objeto(sala, sala->objetos->nodo_inicio->elemento)){
 		return NULL;
 	}
 	
@@ -409,7 +409,7 @@ char* sala_describir_objeto(sala_t* sala, const char *nombre_objeto)
 	if (objeto){
 		return objeto->descripcion;
 	}
-	
+
 	objeto = lista_buscar_elemento(sala->conocidos, comparador, (void *)nombre_objeto);
 	
 	if (objeto){
