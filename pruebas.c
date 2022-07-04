@@ -91,15 +91,16 @@ void pruebas_crear_sala()
 	pa2m_afirmar(sala_crear_desde_archivos("/ASD/ASD/", "dasD/sa2asdd") == NULL,
 		     "No puedo crear la sala a partír de archivos inexistentes");
 
-	pa2m_afirmar(sala_crear_desde_archivos("", "chanu/int.csv") == NULL,
+	pa2m_afirmar(sala_crear_desde_archivos("", "arch_pruebas/int.csv") == NULL,
 		     "No puedo crear la sala sin objetos");
 
-	pa2m_afirmar(sala_crear_desde_archivos("chanu/obj.dat", "chanu/vacio.txt") == NULL,
+	pa2m_afirmar(sala_crear_desde_archivos("arch_pruebas/obj.dat", "arch_pruebas/vacio.txt") == NULL,
 		     "No puedo crear la sala sin interacciones");
 
-	sala_t *sala = sala_crear_desde_archivos("chanu/obj.dat", "chanu/int.csv");
+	sala_t *sala = sala_crear_desde_archivos("arch_pruebas/obj.dat", "arch_pruebas/int.csv");
 
 	pa2m_afirmar(sala != NULL, "Puedo crear la sala a partir de archivos no vacíos");
+
 	/* pa2m_afirmar(sala->cantidad_objetos == 9, "Se leyeron 9 objetos");
 	pa2m_afirmar(sala->cantidad_interacciones == 9, "Se leyeron 9 interacciones"); */
 
@@ -113,16 +114,16 @@ void pruebas_nombre_objetos()
 		     "No puedo obtener los nombres de objetos de una sala NULL");
 	pa2m_afirmar(cantidad == -1, "La cantidad es -1 luego de invocar a la función");
 
-	sala_t *sala = sala_crear_desde_archivos("chanu/obj.dat", "chanu/int.csv");
+	sala_t *sala = sala_crear_desde_archivos("arch_pruebas/obj.dat", "arch_pruebas/int.csv");
 
 	char **objetos = sala_obtener_nombre_objetos(sala, NULL);
 	pa2m_afirmar(objetos != NULL,
-		     "Puedo pedir el vector de nombres a la sala pasando cantidad NULL");
+		     "Puedo pedir la lista de nombres a la sala pasando cantidad NULL");
 
 	char **objetos2 = sala_obtener_nombre_objetos(sala, &cantidad);
 	pa2m_afirmar(objetos2 != NULL,
-		     "Puedo pedir el vector de nombres a la sala pasando cantidad no NULL");
-	pa2m_afirmar(cantidad == 9, "La cantidad de elementos del vector coincide con lo esperado");
+		     "Puedo pedir la lista de nombres a la sala pasando cantidad no NULL");
+	pa2m_afirmar(cantidad == 9, "La cantidad de elementos de la lista coincide con lo esperado");
 
 	const char *esperados[] = { "habitacion",    "mesa",  "interruptor", "pokebola", "cajon",
 				    "cajon-abierto", "llave", "anillo",	     "puerta" };
@@ -146,7 +147,7 @@ void pruebas_interacciones()
 	pa2m_afirmar(sala_es_interaccion_valida(NULL, "hacer", NULL, NULL) == false,
 		     "No es válido pedir interacciones de una sala NULL");
 
-	sala_t *sala = sala_crear_desde_archivos("chanu/obj.dat", "chanu/int.csv");
+	sala_t *sala = sala_crear_desde_archivos("arch_pruebas/obj.dat", "arch_pruebas/int.csv");
 
 	pa2m_afirmar(sala_es_interaccion_valida(sala, NULL, "", "") == false, "No es válida una intearcción con verbo NULL");
 	pa2m_afirmar(sala_es_interaccion_valida(sala, "hacer", NULL, "") == false, "No es válida una intearcción con objeto NULL");
@@ -162,8 +163,131 @@ void pruebas_interacciones()
 	sala_destruir(sala);
 }
 
+void pruebas_nombre_conocidos()
+{
+	int cantidad = 0;
+	pa2m_afirmar(sala_obtener_nombre_objetos_conocidos(NULL, &cantidad) == NULL, "No puedo obtener los objetos conocidos de una sala NULL");
+
+	pa2m_afirmar(cantidad == -1, "La cantidad es -1 luego de invocar a la función");
+
+	sala_t *sala = sala_crear_desde_archivos("arch_pruebas/obj.dat", "arch_pruebas/int.csv");
+
+	char **objetos = sala_obtener_nombre_objetos_conocidos(sala, NULL);
+	pa2m_afirmar(objetos != NULL, "Puedo pedir la lista de objetos conocidos a la sala pasando cantidad NULL");
+
+
+	char **objetos2 = sala_obtener_nombre_objetos_conocidos(sala, &cantidad);
+	pa2m_afirmar(objetos2 != NULL, "Puedo pedir la lista de objetos conocidos a la sala pasando cantidad no NULL");
+
+	char **vector = NULL;
+
+	pa2m_afirmar((vector = sala_obtener_nombre_objetos_conocidos( sala, &cantidad)), "Puedo obtener los nombres de los objetos conocidos");
+
+	pa2m_afirmar(cantidad == 1, "Inicialmente solo se conoce un objeto");
+
+	pa2m_afirmar(strcmp(vector[0], "habitacion") == 0, "El elemento conocido es la habitación");
+
+	free(vector);
+
+	free(objetos);
+	free(objetos2);
+	sala_destruir(sala);
+}
+
+void pruebas_nombre_poseidos()
+{
+	int cantidad = 0;
+	pa2m_afirmar(sala_obtener_nombre_objetos_poseidos(NULL, &cantidad) == NULL, "No puedo obtener los objetos poseidos de una sala NULL");
+
+	pa2m_afirmar(cantidad == -1, "La cantidad es -1 luego de invocar a la función");
+
+	sala_t *sala = sala_crear_desde_archivos("arch_pruebas/obj.dat", "arch_pruebas/int.csv");
+
+	char **objetos = sala_obtener_nombre_objetos_poseidos(sala, NULL);
+	pa2m_afirmar(objetos != NULL, "Puedo pedir la lista de objetos poseidos a la sala pasando cantidad NULL");
+
+	char **objetos2 = sala_obtener_nombre_objetos_poseidos(sala, &cantidad);
+
+	pa2m_afirmar(objetos2 != NULL, "Puedo pedir la lista de objetos poseidos a la sala pasando cantidad no NULL");
+	char **vector = NULL;
+
+	pa2m_afirmar((vector = sala_obtener_nombre_objetos_poseidos(sala, &cantidad)), "Puedo obtener los nombres de los objetos conocidos");
+
+	pa2m_afirmar(cantidad == 0, "El jugador no posee ningún objeto");
+
+	free(vector);
+
+	free(objetos);
+	free(objetos2);
+	sala_destruir(sala);
+}
+
+void pruebas_agarrar()
+{
+	sala_t *sala = sala_crear_desde_archivos("arch_pruebas/objeto.txt", "arch_pruebas/interaccion.txt");
+
+	pa2m_afirmar(sala_agarrar_objeto(NULL, "pokebola") == false, "No puedo agarrar un objeto de una sala NULL");
+	pa2m_afirmar(sala_agarrar_objeto(sala, NULL) == false, "No puedo agarrar un objeto NULL");
+
+	pa2m_afirmar(sala_agarrar_objeto(sala, "llave") == false, "No puedo agarrar un objeto no conocido");
+	pa2m_afirmar(sala_agarrar_objeto(sala, "puerta") == false, "No puedo agarrar un objeto no asible");
+
+	sala_ejecutar_interaccion(sala, "examinar", "habitacion", "", NULL,  NULL);
+
+	pa2m_afirmar(sala_agarrar_objeto(sala, "pokebola") == true, "Puedo agarrar un objeto conocido y asible");
+	pa2m_afirmar(sala_agarrar_objeto(sala, "pokebola") == false, "No puedo agarrar un objeto ya poseído");
+
+	sala_ejecutar_interaccion(sala, "abrir", "pokebola", "", NULL,  NULL);
+
+	pa2m_afirmar(sala_agarrar_objeto(sala, "llave") == true, "Puedo agarrar otro objeto conocido y asible");
+
+	sala_destruir(sala);
+}
+
+void pruebas_describir()
+{
+	sala_t *sala = sala_crear_desde_archivos("arch_pruebas/objeto.txt", "arch_pruebas/interaccion.txt");
+
+	pa2m_afirmar(sala_describir_objeto(NULL, "pokebola") == NULL, "No puedo describir un objeto de una sala NULL");
+	pa2m_afirmar(sala_describir_objeto(sala, NULL) == NULL, "No puedo describir un objeto NULL");
+
+	pa2m_afirmar(sala_describir_objeto(sala, "puerta") == NULL, "No puedo obtener la descripción un objeto no conocido o poseído");
+
+	pa2m_afirmar(sala_describir_objeto(sala, "habitacion") != NULL, "Puedo obtener la descripción de un objeto conocido");
+
+	sala_ejecutar_interaccion(sala, "examinar", "habitacion", "", NULL,  NULL);
+	sala_agarrar_objeto(sala, "pokebola");
+
+	pa2m_afirmar(sala_describir_objeto(sala, "pokebola") != NULL, "Puedo obtener la descripción de un objeto poseido");
+
+	sala_destruir(sala);
+}
+
+void pruebas_escape()
+{
+	sala_t *sala = sala_crear_desde_archivos("arch_pruebas/objeto.txt", "arch_pruebas/interaccion.txt");
+
+	pa2m_afirmar(sala_escape_exitoso(sala) == false, "Inicialmente la sala no está escapada");
+
+	pa2m_afirmar(sala_ejecutar_interaccion(sala, "salir", "puerta", "", NULL, NULL) == 0, "La puerta no está abierta, no puedo salir de la sala");
+
+	pa2m_afirmar(sala_ejecutar_interaccion(sala, "examinar", "habitacion", "", NULL, NULL) == 2, "Examino la habitacion y se ejecutan dos interacciones");
+
+	sala_agarrar_objeto(sala, "pokebola");
+	sala_ejecutar_interaccion(sala, "abrir", "pokebola", "", NULL,  NULL);
+	sala_agarrar_objeto(sala, "llave");
+	sala_ejecutar_interaccion(sala, "abrir", "llave", "puerta", NULL,  NULL);
+	sala_ejecutar_interaccion(sala, "salir", "puerta-abierta", "", NULL,  NULL);
+
+	pa2m_afirmar(sala_escape_exitoso(sala) == true, "Ahora la sala fue escapada exitosamente");
+
+	sala_destruir(sala);
+}
+
 int main()
 {
+	pa2m_nuevo_grupo("=============Pruebas del TP1=============");
+
 	pa2m_nuevo_grupo("Pruebas de creación de objetos");
 	pruebasCrearObjeto();
 
@@ -173,11 +297,28 @@ int main()
 	pa2m_nuevo_grupo("Pruebas de creación de sala");
 	pruebas_crear_sala();
 
-	pa2m_nuevo_grupo("Pruebas del vector de nombres");
+	pa2m_nuevo_grupo("Pruebas de la lista de nombres");
 	pruebas_nombre_objetos();
 
 	pa2m_nuevo_grupo("Pruebas de interacciones");
 	pruebas_interacciones();
+
+	pa2m_nuevo_grupo("=============Pruebas del TP2===============");
+
+	pa2m_nuevo_grupo("Pruebas de la lista de conocidos");
+	pruebas_nombre_conocidos();
+
+	pa2m_nuevo_grupo("Pruebas de la lista de poseidos");
+	pruebas_nombre_poseidos();
+
+	pa2m_nuevo_grupo("Pruebas de agarrar objetos");
+	pruebas_agarrar();
+
+	pa2m_nuevo_grupo("Pruebas de describir objetos");
+	pruebas_describir();
+
+	pa2m_nuevo_grupo("Pruebas de escape");
+	pruebas_escape();
 
 	return pa2m_mostrar_reporte();
 }

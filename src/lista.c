@@ -107,7 +107,7 @@ void *lista_quitar_de_posicion(lista_t *lista, size_t posicion)
 	}
 	void *elemento_a_quitar = NULL;
 
-	if(posicion >= lista_tamanio(lista)){ //Quitar al final
+	if(posicion >= lista_tamanio(lista)-1){ //Quitar al final
 		return lista_quitar(lista);
 	}
 	else if(posicion == 0){ //Quitar al inicio

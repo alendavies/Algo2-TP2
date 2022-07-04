@@ -9,6 +9,7 @@
 
 int asignar_tipo_accion(char tipo)
 {
+
 	int accion_tipo = 0;
 
 	if(tipo == 'd'){
@@ -24,7 +25,7 @@ int asignar_tipo_accion(char tipo)
 		accion_tipo = MOSTRAR_MENSAJE;	
 	}
 	else if(tipo == 'g'){
-		accion_tipo = ESCAPAR;
+		accion_tipo = ESCAPAR;	
 	}
 	else{
 		accion_tipo = ACCION_INVALIDA;
